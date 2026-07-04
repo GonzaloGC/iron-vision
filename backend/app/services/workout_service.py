@@ -76,6 +76,7 @@ class WorkoutService:
         photo_url: str,
         photo_time: datetime,
         db: Session,
+        reps: Optional[int] = None,
     ) -> Set:
         max_order = db.query(func.max(Set.order)).filter(
             Set.exercise_id == exercise_id,
@@ -87,6 +88,7 @@ class WorkoutService:
             photo_url=photo_url,
             photo_taken_at=photo_time,
             order=max_order + 1,
+            reps=reps,
         )
         db.add(set_)
         db.commit()
@@ -194,4 +196,25 @@ class WorkoutService:
         db.commit()
         db.refresh(set_)
         return set_
+
+    @staticmethod
+    def update_set(set_id: int, data: dict, db: Session) -> Optional[Set]:
+        set_ = db.query(Set).filter(Set.id == set_id).first()
+        if not set_:
+            return None
+        for key, value in data.items():
+            if value is not None:
+                setattr(set_, key, value)
+        db.commit()
+        db.refresh(set_)
+        return set_
+
+    @staticmethod
+    def delete_set(set_id: int, db: Session) -> bool:
+        set_ = db.query(Set).filter(Set.id == set_id).first()
+        if not set_:
+            return False
+        db.delete(set_)
+        db.commit()
+        return True
 

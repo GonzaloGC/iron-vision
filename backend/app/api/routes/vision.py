@@ -1,7 +1,9 @@
 import logging
 import os
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from typing import Optional
+
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -32,6 +34,7 @@ def _save_upload(file: UploadFile, upload_dir: str) -> str:
 @router.post("/analyze", response_model=AnalyzeResponse)
 def analyze_photo(
     file: UploadFile = File(...),
+    reps: Optional[int] = Form(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -60,7 +63,7 @@ def analyze_photo(
 
     set_ = WorkoutService.record_set_from_photo(
         workout.id, exercise.id, result["total_weight_kg"],
-        photo_url, photo_time, db,
+        photo_url, photo_time, db, reps=reps,
     )
 
     logger.info(

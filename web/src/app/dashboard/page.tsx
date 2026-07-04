@@ -17,6 +17,9 @@ export default function DashboardPage() {
   const [eqForm, setEqForm] = useState({ name: "", type: "plate", weight_kg: 0, quantity: 1 });
   const [visionResult, setVisionResult] = useState<api.AnalyzeResponse | null>(null);
   const [visionLoading, setVisionLoading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [editReps, setEditReps] = useState("");
+  const [editWeight, setEditWeight] = useState("");
   const [loading, setLoading] = useState(true);
   const { addToast } = useToast();
 
@@ -66,14 +69,40 @@ export default function DashboardPage() {
   const handleVisionFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
     setVisionLoading(true);
     try {
       const res = await api.analyzePhoto(file);
       setVisionResult(res);
+      setEditWeight(String(res.total_weight_kg));
       const [w] = await Promise.all([api.getWorkouts()]);
       setWorkouts(w);
     } catch (err: any) { addToast(err.message); }
     finally { setVisionLoading(false); }
+  };
+
+  const handleConfirmSet = async () => {
+    if (!visionResult) return;
+    try {
+      await api.updateSet(visionResult.set_id, {
+        reps: editReps ? parseInt(editReps) : undefined,
+        weight_kg: editWeight ? parseFloat(editWeight) : undefined,
+      });
+      addToast("Set actualizado correctamente", "success");
+      handleClearVision();
+      const [w] = await Promise.all([api.getWorkouts()]);
+      setWorkouts(w);
+    } catch (err: any) { addToast(err.message); }
+  };
+
+  const handleClearVision = () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    setVisionResult(null);
+    setEditReps("");
+    setEditWeight("");
   };
 
   /* ---------- finish workout ---------- */
@@ -205,7 +234,7 @@ export default function DashboardPage() {
       <section id="inventory">
         <div className="card">
           <h2>🏗 Inventario de Equipamiento</h2>
-          <div style={{ display: "grid", gridTemplateColumns: "3fr 1fr 1fr 1fr auto", gap: 8, alignItems: "end", marginBottom: 16 }}>
+          <div className="inventory-form-grid">
             <div><label style={{ color: "var(--text-muted)", fontSize: 12 }}>Nombre</label>
               <input value={eqForm.name} onChange={e => setEqForm(p => ({ ...p, name: e.target.value }))} placeholder="Ej: Disco 10kg" /></div>
             <div><label style={{ color: "var(--text-muted)", fontSize: 12 }}>Tipo</label>
@@ -242,21 +271,41 @@ export default function DashboardPage() {
       {/* === VISION === */}
       <section id="vision">
         <div className="card">
-          <h2>📸 Probar Visión IA</h2>
+          <h2>📸 Capturar Set</h2>
           <p style={{ color: "var(--text-muted)", fontSize: 14, marginBottom: 16 }}>
-            Subí una foto para simular el análisis. El stub detectará equipamiento aleatorio de tu inventario.
+            Sacá una foto de tu barra cargada. El stub simula la detección de tu inventario.
           </p>
-          <div className="upload-area" onClick={() => document.getElementById("vision-input")?.click()}>
-            <div className="icon">📷</div>
-            <p><strong>{visionLoading ? "Analizando..." : "Hacé clic para seleccionar una foto"}</strong></p>
-            <p className="hint">Cualquier foto funciona — el análisis es simulado</p>
-            <input id="vision-input" type="file" accept="image/*" onChange={handleVisionFile} style={{ display: "none" }} />
-          </div>
+
+          {!previewUrl && (
+            <div className="upload-area" onClick={() => document.getElementById("vision-input")?.click()}>
+              <div className="icon">📷</div>
+              <p><strong>{visionLoading ? "Analizando..." : "Sacar foto o seleccionar archivo"}</strong></p>
+              <p className="hint">En celular abre la cámara automáticamente</p>
+              <input
+                id="vision-input"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleVisionFile}
+                style={{ display: "none" }}
+              />
+            </div>
+          )}
+
+          {previewUrl && !visionResult && (
+            <div style={{ textAlign: "center" }}>
+              <img src={previewUrl} alt="Preview" style={{ maxWidth: "100%", maxHeight: 300, borderRadius: 8, marginBottom: 12 }} />
+              <p style={{ color: "var(--text-muted)" }}>Analizando foto...</p>
+            </div>
+          )}
 
           {visionResult && (
             <div style={{ marginTop: 16, background: "var(--bg)", borderRadius: 8, padding: 16 }}>
-              <p style={{ fontWeight: 600, marginBottom: 8 }}>✅ Resultado del análisis</p>
-              <table style={{ fontSize: 14 }}>
+              {previewUrl && (
+                <img src={previewUrl} alt="Preview" style={{ maxWidth: "100%", maxHeight: 200, borderRadius: 8, marginBottom: 12 }} />
+              )}
+              <p style={{ fontWeight: 600, marginBottom: 8 }}>✅ Equipo detectado</p>
+              <table style={{ fontSize: 14, marginBottom: 16 }}>
                 <thead><tr><th>Equipo</th><th>Peso (kg)</th><th>Cant.</th></tr></thead>
                 <tbody>
                   {visionResult.equipment_detected.map((d, i) => (
@@ -264,11 +313,34 @@ export default function DashboardPage() {
                   ))}
                 </tbody>
               </table>
-              <div style={{ marginTop: 12, display: "flex", gap: 16, flexWrap: "wrap", color: "var(--text-muted)", fontSize: 13 }}>
-                <span><strong>Peso total:</strong> {visionResult.total_weight_kg} kg</span>
-                <span><strong>Workout:</strong> #{visionResult.workout_id}</span>
-                <span><strong>Ejercicio:</strong> #{visionResult.exercise_id}</span>
-                <span><strong>Set:</strong> #{visionResult.set_id}</span>
+
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
+                <div style={{ flex: 1, minWidth: 120 }}>
+                  <label style={{ color: "var(--text-muted)", fontSize: 12 }}>Peso (kg)</label>
+                  <input
+                    type="number" step="0.5"
+                    value={editWeight}
+                    onChange={e => setEditWeight(e.target.value)}
+                  />
+                </div>
+                <div style={{ flex: 1, minWidth: 120 }}>
+                  <label style={{ color: "var(--text-muted)", fontSize: 12 }}>Repeticiones</label>
+                  <input
+                    type="number" step="1" min="0"
+                    value={editReps}
+                    onChange={e => setEditReps(e.target.value)}
+                    placeholder="Ej: 8"
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn btn-primary" onClick={handleConfirmSet}>
+                  ✓ Confirmar set
+                </button>
+                <button className="btn btn-ghost" onClick={handleClearVision}>
+                  Cancelar
+                </button>
               </div>
             </div>
           )}

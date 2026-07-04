@@ -53,10 +53,19 @@ export interface AnalyzeResponse {
   total_weight_kg: number; workout_id: number; exercise_id: number; set_id: number; photo_time: string;
 }
 
-export function analyzePhoto(file: File) {
+export function analyzePhoto(file: File, reps?: number) {
   const fd = new FormData();
   fd.append("file", file);
+  if (reps !== undefined) fd.append("reps", String(reps));
   return request<AnalyzeResponse>("/vision/analyze", { method: "POST", body: fd });
+}
+
+export function updateSet(id: number, data: { reps?: number; weight_kg?: number }) {
+  return request<SetResponse>(`/workouts/sets/${id}`, { method: "PATCH", body: JSON.stringify(data) });
+}
+
+export function deleteSet(id: number) {
+  return request<void>(`/workouts/sets/${id}`, { method: "DELETE" });
 }
 
 export interface VolumePoint { label: string; total_volume_kg: number; total_sets: number; workout_count: number; }

@@ -9,6 +9,7 @@ from app.schemas.workout import (
     ExerciseResponse,
     SetCreate,
     SetResponse,
+    SetUpdate,
     WorkoutCreate,
     WorkoutResponse,
 )
@@ -98,3 +99,30 @@ def add_set(
     if not set_:
         raise HTTPException(status_code=404, detail="Exercise not found")
     return set_
+
+
+@router.patch("/sets/{set_id}", response_model=SetResponse)
+def update_set(
+    set_id: int,
+    data: SetUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    filtered = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not filtered:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    updated = WorkoutService.update_set(set_id, filtered, db)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Set not found")
+    return updated
+
+
+@router.delete("/sets/{set_id}", status_code=204)
+def delete_set(
+    set_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    deleted = WorkoutService.delete_set(set_id, db)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Set not found")

@@ -9,6 +9,11 @@ class SetCreate(BaseModel):
     weight_kg: Optional[float] = None
 
 
+class SetUpdate(BaseModel):
+    reps: Optional[int] = None
+    weight_kg: Optional[float] = None
+
+
 class SetResponse(BaseModel):
     id: int
     exercise_id: int

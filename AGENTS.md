@@ -67,15 +67,27 @@ cd backend && python -m seed_demo                   # reset + seed 10 workouts, 
 cd web && npm install
 cd web && npm run dev          # :3000
 cd web && npm run build
+cd web && npm run dev:network  # :3000 accesible desde la red local
 ```
 
-**Backend URL** hardcoded in `src/lib/api.ts` as `http://localhost:8000`.
+**Backend URL** configurable via `NEXT_PUBLIC_API_URL` en `.env.local` (default `http://localhost:8000` en `api.ts`).
 
 Charts (`ProgressChart.tsx`, `VolumeChart.tsx`) are placeholders — actual charts render inline in `dashboard/page.tsx`.
 
 ## Mobile
 
 Expo project with `app.json: {}` and a stub `App.tsx`. Screens (`CameraScreen`, `HistoryScreen`, `ProfileScreen`) exist but have no connectivity. Not functional.
+
+## Scripts
+
+`scripts/` contiene utilidades para correr el proyecto en red local:
+
+| Script | Propósito |
+|--------|-----------|
+| `serve.ps1` | PowerShell: detecta IP local, levanta backend + frontend en 0.0.0.0 |
+| `serve.sh` | Bash equivalente |
+| `start-backend.bat` | Inicia solo backend con `--host 0.0.0.0` |
+| `start-backend.ps1` | PowerShell equivalente |
 
 ## General
 
