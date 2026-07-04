@@ -1,3 +1,4 @@
+import logging
 import os
 
 from fastapi import APIRouter, Depends, File, UploadFile
@@ -11,6 +12,8 @@ from app.schemas.vision import AnalyzeResponse, DetectedEquipment
 from app.services.exif_service import ExifService
 from app.services.vision_service import VisionService
 from app.services.workout_service import WorkoutService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/vision", tags=["Vision"])
 
@@ -32,14 +35,18 @@ def analyze_photo(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    logger.info("Analyzing photo for user %d: %s", current_user.id, file.filename)
+
     photo_path = _save_upload(file, settings.UPLOAD_DIR)
     photo_url = f"/{settings.UPLOAD_DIR}/{os.path.basename(photo_path)}"
 
     photo_time = ExifService.extract_datetime(photo_path)
+    logger.debug("Photo timestamp: %s", photo_time)
 
     equipment = db.query(EquipmentModel).filter(
         EquipmentModel.user_id == current_user.id,
     ).all()
+    logger.debug("User has %d equipment items", len(equipment))
 
     result = VisionService.analyze_photo(photo_path, equipment)
 
@@ -48,12 +55,17 @@ def analyze_photo(
     )
 
     exercise = WorkoutService.get_or_create_current_exercise(
-        workout.id, photo_time, db,
+        workout.id, photo_time, db, exercise_name=result.get("exercise_name", ""),
     )
 
     set_ = WorkoutService.record_set_from_photo(
         workout.id, exercise.id, result["total_weight_kg"],
         photo_url, photo_time, db,
+    )
+
+    logger.info(
+        "Photo analysis complete: workout=%d exercise=%d set=%d total=%.1fkg",
+        workout.id, exercise.id, set_.id, result["total_weight_kg"],
     )
 
     return AnalyzeResponse(

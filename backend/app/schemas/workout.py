@@ -61,13 +61,3 @@ class WorkoutResponse(BaseModel):
     class Config:
         from_attributes = True
 
-
-class WorkoutSummary(BaseModel):
-    id: int
-    started_at: datetime
-    ended_at: Optional[datetime] = None
-    duration_minutes: Optional[float] = None
-    is_completed: int
-    exercise_count: int
-    total_volume_kg: float
-    total_sets: int

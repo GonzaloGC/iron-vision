@@ -11,7 +11,6 @@ from app.schemas.workout import (
     SetResponse,
     WorkoutCreate,
     WorkoutResponse,
-    WorkoutSummary,
 )
 from app.services.workout_service import WorkoutService
 

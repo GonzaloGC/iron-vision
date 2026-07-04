@@ -1,3 +1,4 @@
+import logging
 import os
 
 from fastapi import FastAPI
@@ -7,6 +8,12 @@ from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.models.database import init_db
 from app.api.routes import dashboard, inventory, vision, workouts
+
+logging.basicConfig(
+    level=logging.DEBUG if settings.DEBUG else logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 app = FastAPI(title=settings.APP_NAME, version=settings.VERSION)
 

@@ -40,7 +40,6 @@ def seed():
         ("Soporte Sentadilla", "other", 0.0, 1),
     ]
 
-    equipment_map = {}
     for name, etype, weight, qty in equipment_data:
         eq = Equipment(
             user_id=user.id,
@@ -51,7 +50,6 @@ def seed():
         )
         db.add(eq)
         db.flush()
-        equipment_map[name] = eq.id
 
     # 10 workouts progressive overload over 4 weeks
     now = datetime.utcnow()

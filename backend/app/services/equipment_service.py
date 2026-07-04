@@ -11,10 +11,6 @@ class EquipmentService:
         return db.query(Equipment).filter(Equipment.user_id == user_id).all()
 
     @staticmethod
-    def get_by_id(equipment_id: int, db: Session) -> Optional[Equipment]:
-        return db.query(Equipment).filter(Equipment.id == equipment_id).first()
-
-    @staticmethod
     def create(user_id: int, data: dict, db: Session) -> Equipment:
         equipment = Equipment(user_id=user_id, **data)
         db.add(equipment)

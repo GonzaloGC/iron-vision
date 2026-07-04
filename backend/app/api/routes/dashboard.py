@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, Query
@@ -44,8 +45,6 @@ def get_volume(
         .order_by(Workout.started_at.asc())
         .all()
     )
-
-    from collections import OrderedDict
 
     buckets = OrderedDict()
 
@@ -117,39 +116,35 @@ def get_recent(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    workouts = (
-        db.query(Workout)
+    rows = (
+        db.query(
+            Workout.id,
+            Workout.started_at,
+            Workout.duration_minutes,
+            func.count(Exercise.id).label("exercise_count"),
+            func.coalesce(func.sum(Set.weight_kg), 0).label("total_volume"),
+            func.count(Set.id).label("total_sets"),
+        )
+        .outerjoin(Exercise, Exercise.workout_id == Workout.id)
+        .outerjoin(Set, Set.exercise_id == Exercise.id)
         .filter(
             Workout.user_id == current_user.id,
             Workout.is_completed == 1,
         )
+        .group_by(Workout.id)
         .order_by(Workout.started_at.desc())
         .limit(limit)
         .all()
     )
 
-    result = []
-    for w in workouts:
-        stats = (
-            db.query(
-                func.count(Exercise.id).label("exercise_count"),
-                func.coalesce(func.sum(Set.weight_kg), 0).label("total_volume"),
-                func.count(Set.id).label("total_sets"),
-            )
-            .outerjoin(Set, Set.exercise_id == Exercise.id)
-            .filter(Exercise.workout_id == w.id)
-            .first()
+    return [
+        RecentWorkout(
+            id=row.id,
+            date=row.started_at,
+            duration_minutes=row.duration_minutes,
+            exercise_count=row.exercise_count,
+            total_volume_kg=round(row.total_volume or 0.0, 1),
+            total_sets=row.total_sets,
         )
-
-        result.append(
-            RecentWorkout(
-                id=w.id,
-                date=w.started_at,
-                duration_minutes=w.duration_minutes,
-                exercise_count=stats.exercise_count,
-                total_volume_kg=round(stats.total_volume or 0.0, 1),
-                total_sets=stats.total_sets,
-            )
-        )
-
-    return result
+        for row in rows
+    ]

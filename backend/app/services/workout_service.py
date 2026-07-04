@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -5,7 +6,9 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.config import settings
-from app.models.orm_models import Equipment, Exercise, Set, Workout
+from app.models.orm_models import Exercise, Set, Workout
+
+logger = logging.getLogger(__name__)
 
 
 class WorkoutService:
@@ -24,10 +27,18 @@ class WorkoutService:
             db.add(workout)
             db.commit()
             db.refresh(workout)
+            logger.info("Created new workout %d for user %d", workout.id, user_id)
+        else:
+            logger.debug("Reusing active workout %d", workout.id)
         return workout
 
     @staticmethod
-    def get_or_create_current_exercise(workout_id: int, photo_time: datetime, db: Session) -> Exercise:
+    def get_or_create_current_exercise(
+        workout_id: int,
+        photo_time: datetime,
+        db: Session,
+        exercise_name: str = "Ejercicio",
+    ) -> Exercise:
         last_exercise = db.query(Exercise).filter(
             Exercise.workout_id == workout_id,
         ).order_by(Exercise.order.desc()).first()
@@ -48,12 +59,13 @@ class WorkoutService:
 
         exercise = Exercise(
             workout_id=workout_id,
-            name="Ejercicio",
+            name=exercise_name,
             order=max_order + 1,
         )
         db.add(exercise)
         db.commit()
         db.refresh(exercise)
+        logger.info("Created new exercise %d in workout %d (order %d)", exercise.id, workout_id, max_order + 1)
         return exercise
 
     @staticmethod
@@ -79,6 +91,7 @@ class WorkoutService:
         db.add(set_)
         db.commit()
         db.refresh(set_)
+        logger.info("Recorded set %d (%.1f kg) in exercise %d", set_.id, weight_kg, exercise_id)
         return set_
 
     @staticmethod
@@ -182,9 +195,3 @@ class WorkoutService:
         db.refresh(set_)
         return set_
 
-    @staticmethod
-    def calculate_volume(workout_id: int, db: Session) -> float:
-        result = db.query(func.sum(Set.weight_kg)).join(Exercise).filter(
-            Exercise.workout_id == workout_id,
-        ).scalar()
-        return round(result or 0.0, 1)

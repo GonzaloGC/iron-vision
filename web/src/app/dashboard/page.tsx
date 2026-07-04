@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from "recharts";
 import * as api from "@/lib/api";
+import { useToast } from "@/components/Toast";
 
 export default function DashboardPage() {
   /* ---------- state ---------- */
@@ -17,6 +18,7 @@ export default function DashboardPage() {
   const [visionResult, setVisionResult] = useState<api.AnalyzeResponse | null>(null);
   const [visionLoading, setVisionLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { addToast } = useToast();
 
   const exercises = ["Sentadilla", "Press Banca", "Peso Muerto"];
 
@@ -30,7 +32,7 @@ export default function DashboardPage() {
         api.getWorkouts(),
       ]);
       setVolume(v); setProgress(p); setRecent(r); setEquipment(e); setWorkouts(w);
-    } catch (err) { console.error(err); }
+    } catch (err) { addToast("Error al cargar datos del dashboard"); }
     finally { setLoading(false); }
   }, [progExercise]);
 
@@ -70,7 +72,7 @@ export default function DashboardPage() {
       setVisionResult(res);
       const [w] = await Promise.all([api.getWorkouts()]);
       setWorkouts(w);
-    } catch (err: any) { alert(err.message); }
+    } catch (err: any) { addToast(err.message); }
     finally { setVisionLoading(false); }
   };
 
