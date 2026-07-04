@@ -1,0 +1,1 @@
+# Dependencias del backend (fastapi, uvicorn, sqlalchemy, pillow, ultralytics...)
