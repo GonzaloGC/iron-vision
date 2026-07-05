@@ -110,10 +110,13 @@ class WorkoutService:
         return workout
 
     @staticmethod
-    def get_workout_detail(workout_id: int, db: Session) -> Optional[Workout]:
+    def get_workout_detail(workout_id: int, user_id: int, db: Session) -> Optional[Workout]:
         return db.query(Workout).options(
             joinedload(Workout.exercises).joinedload(Exercise.sets),
-        ).filter(Workout.id == workout_id).first()
+        ).filter(
+            Workout.id == workout_id, 
+            Workout.user_id == user_id # <-- FIX
+        ).first()
 
     @staticmethod
     def list_workouts(user_id: int, db: Session) -> list[Workout]:
@@ -124,8 +127,11 @@ class WorkoutService:
         ).order_by(Workout.started_at.desc()).all()
 
     @staticmethod
-    def finish_workout(workout_id: int, db: Session) -> Optional[Workout]:
-        workout = db.query(Workout).filter(Workout.id == workout_id).first()
+    def finish_workout(workout_id: int, user_id: int, db: Session) -> Optional[Workout]:
+        workout = db.query(Workout).filter(
+            Workout.id == workout_id, 
+            Workout.user_id == user_id # <-- FIX
+        ).first()
         if not workout:
             return None
 
@@ -146,8 +152,11 @@ class WorkoutService:
         return workout
 
     @staticmethod
-    def delete_workout(workout_id: int, db: Session) -> bool:
-        workout = db.query(Workout).filter(Workout.id == workout_id).first()
+    def delete_workout(workout_id: int, user_id: int, db: Session) -> bool:
+        workout = db.query(Workout).filter(
+            Workout.id == workout_id, 
+            Workout.user_id == user_id # <-- FIX
+        ).first()
         if not workout:
             return False
         db.delete(workout)
