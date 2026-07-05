@@ -1,55 +1,37 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const SECTIONS = [
-  { id: "kpi", label: "Dashboard", icon: "📊" },
-  { id: "volume", label: "Volumen", icon: "📈" },
-  { id: "progress", label: "Progreso", icon: "📉" },
-  { id: "workouts", label: "Workouts", icon: "📋" },
-  { id: "inventory", label: "Inventario", icon: "🏗" },
-  { id: "vision", label: "Visión", icon: "📸" },
+  { href: "/dashboard", label: "Dashboard", icon: "📊" },
+  { href: "/dashboard/capture", label: "Capture", icon: "📸" },
+  { href: "/dashboard/inventory", label: "Inventory", icon: "🏗" },
 ];
 
 export default function Sidebar() {
-  const [active, setActive] = useState("kpi");
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const center = window.scrollY + window.innerHeight / 2;
-      for (const { id } of SECTIONS) {
-        const el = document.getElementById(id);
-        if (el && el.offsetTop <= center && el.offsetTop + el.offsetHeight > center) {
-          setActive(id);
-          break;
-        }
-      }
-    };
-
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-  };
+  const pathname = usePathname();
 
   return (
     <aside className="sidebar" role="navigation" aria-label="Secciones del dashboard">
-      <h1><span aria-hidden="true">🏋</span> IronVision</h1>
+      <div className="sidebar-brand">
+        <span aria-hidden="true">🏋</span> IronVision
+      </div>
       <nav>
-        {SECTIONS.map(s => (
-          <button
-            key={s.id}
-            onClick={() => scrollTo(s.id)}
-            className={active === s.id ? "active" : ""}
-            aria-current={active === s.id ? "true" : undefined}
-          >
-            <span aria-hidden="true">{s.icon}</span>
-            {s.label}
-          </button>
-        ))}
+        {SECTIONS.map((s) => {
+          const isActive = pathname === s.href;
+          return (
+            <Link
+              key={s.href}
+              href={s.href}
+              className={isActive ? "active" : ""}
+              aria-current={isActive ? "page" : undefined}
+            >
+              <span aria-hidden="true">{s.icon}</span>
+              {s.label}
+            </Link>
+          );
+        })}
       </nav>
     </aside>
   );
