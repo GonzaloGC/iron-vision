@@ -35,7 +35,7 @@ def update_equipment(
     current_user: User = Depends(get_current_user),
 ):
     filtered = {k: v for k, v in data.model_dump().items() if v is not None}
-    updated = EquipmentService.update(equipment_id, filtered, db)
+    updated = EquipmentService.update(equipment_id, current_user.id, filtered, db)
     if not updated:
         raise HTTPException(status_code=404, detail="Equipment not found")
     return updated
@@ -47,6 +47,6 @@ def delete_equipment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    deleted = EquipmentService.delete(equipment_id, db)
+    deleted = EquipmentService.delete(equipment_id, current_user.id, db)
     if not deleted:
         raise HTTPException(status_code=404, detail="Equipment not found")
