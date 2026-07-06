@@ -1,0 +1,14 @@
+/venv
+__pycache__/
+*.py[cod]
+*.db
+*.db-shm
+*.db-wal
+uploads/
+node_modules/
+.next/
+*.tsbuildinfo
+next-env.d.ts
+.env.local
+opencode.json
+/.opencode
