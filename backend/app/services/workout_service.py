@@ -13,7 +13,9 @@ logger = logging.getLogger(__name__)
 
 class WorkoutService:
     @staticmethod
-    def get_or_create_active_workout(user_id: int, photo_time: datetime, db: Session) -> Workout:
+    def get_or_create_active_workout(
+        user_id: int, photo_time: datetime, db: Session, commit: bool = True,
+    ) -> Workout:
         workout = db.query(Workout).filter(
             Workout.user_id == user_id,
             Workout.is_completed == 0,
@@ -25,8 +27,11 @@ class WorkoutService:
                 started_at=photo_time - buffer,
             )
             db.add(workout)
-            db.commit()
-            db.refresh(workout)
+            if commit:
+                db.commit()
+                db.refresh(workout)
+            else:
+                db.flush()
             logger.info("Created new workout %d for user %d", workout.id, user_id)
         else:
             logger.debug("Reusing active workout %d", workout.id)
@@ -38,6 +43,7 @@ class WorkoutService:
         photo_time: datetime,
         db: Session,
         exercise_name: str = "Ejercicio",
+        commit: bool = True,
     ) -> Exercise:
         last_exercise = db.query(Exercise).filter(
             Exercise.workout_id == workout_id,
@@ -63,20 +69,23 @@ class WorkoutService:
             order=max_order + 1,
         )
         db.add(exercise)
-        db.commit()
-        db.refresh(exercise)
+        if commit:
+            db.commit()
+            db.refresh(exercise)
+        else:
+            db.flush()
         logger.info("Created new exercise %d in workout %d (order %d)", exercise.id, workout_id, max_order + 1)
         return exercise
 
     @staticmethod
     def record_set_from_photo(
-        workout_id: int,
         exercise_id: int,
         weight_kg: float,
         photo_url: str,
         photo_time: datetime,
         db: Session,
         reps: Optional[int] = None,
+        commit: bool = True,
     ) -> Set:
         max_order = db.query(func.max(Set.order)).filter(
             Set.exercise_id == exercise_id,
@@ -91,8 +100,9 @@ class WorkoutService:
             reps=reps,
         )
         db.add(set_)
-        db.commit()
-        db.refresh(set_)
+        if commit:
+            db.commit()
+            db.refresh(set_)
         logger.info("Recorded set %d (%.1f kg) in exercise %d", set_.id, weight_kg, exercise_id)
         return set_
 
@@ -164,8 +174,11 @@ class WorkoutService:
         return True
 
     @staticmethod
-    def add_exercise(workout_id: int, data: dict, db: Session) -> Optional[Exercise]:
-        workout = db.query(Workout).filter(Workout.id == workout_id).first()
+    def add_exercise(workout_id: int, user_id: int, data: dict, db: Session) -> Optional[Exercise]:
+        workout = db.query(Workout).filter(
+            Workout.id == workout_id,
+            Workout.user_id == user_id,
+        ).first()
         if not workout:
             return None
 
@@ -186,8 +199,11 @@ class WorkoutService:
         return exercise
 
     @staticmethod
-    def add_set(exercise_id: int, data: dict, db: Session) -> Optional[Set]:
-        exercise = db.query(Exercise).filter(Exercise.id == exercise_id).first()
+    def add_set(exercise_id: int, user_id: int, data: dict, db: Session) -> Optional[Set]:
+        exercise = db.query(Exercise).join(Workout).filter(
+            Exercise.id == exercise_id,
+            Workout.user_id == user_id,
+        ).first()
         if not exercise:
             return None
 
@@ -207,8 +223,11 @@ class WorkoutService:
         return set_
 
     @staticmethod
-    def update_set(set_id: int, data: dict, db: Session) -> Optional[Set]:
-        set_ = db.query(Set).filter(Set.id == set_id).first()
+    def update_set(set_id: int, user_id: int, data: dict, db: Session) -> Optional[Set]:
+        set_ = db.query(Set).join(Exercise).join(Workout).filter(
+            Set.id == set_id,
+            Workout.user_id == user_id,
+        ).first()
         if not set_:
             return None
         for key, value in data.items():
@@ -219,8 +238,11 @@ class WorkoutService:
         return set_
 
     @staticmethod
-    def delete_set(set_id: int, db: Session) -> bool:
-        set_ = db.query(Set).filter(Set.id == set_id).first()
+    def delete_set(set_id: int, user_id: int, db: Session) -> bool:
+        set_ = db.query(Set).join(Exercise).join(Workout).filter(
+            Set.id == set_id,
+            Workout.user_id == user_id,
+        ).first()
         if not set_:
             return False
         db.delete(set_)

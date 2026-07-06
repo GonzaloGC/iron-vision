@@ -74,18 +74,27 @@ def analyze_photo(
 
     result = VisionService.analyze_photo(photo_path, equipment)
 
-    workout = WorkoutService.get_or_create_active_workout(
-        current_user.id, photo_time, db,
-    )
+    try:
+        workout = WorkoutService.get_or_create_active_workout(
+            current_user.id, photo_time, db, commit=False,
+        )
 
-    exercise = WorkoutService.get_or_create_current_exercise(
-        workout.id, photo_time, db, exercise_name=result.get("exercise_name", ""),
-    )
+        exercise = WorkoutService.get_or_create_current_exercise(
+            workout.id, photo_time, db, exercise_name=result.get("exercise_name", ""), commit=False,
+        )
 
-    set_ = WorkoutService.record_set_from_photo(
-        workout.id, exercise.id, result["total_weight_kg"],
-        photo_url, photo_time, db, reps=reps,
-    )
+        set_ = WorkoutService.record_set_from_photo(
+            exercise.id, result["total_weight_kg"],
+            photo_url, photo_time, db, reps=reps, commit=False,
+        )
+
+        db.commit()
+    except Exception:
+        db.rollback()
+        if os.path.exists(photo_path):
+            os.remove(photo_path)
+        logger.exception("Failed to record set from photo, transaction rolled back")
+        raise
 
     logger.info(
         "Photo analysis complete: workout=%d exercise=%d set=%d total=%.1fkg",

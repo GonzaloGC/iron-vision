@@ -77,7 +77,7 @@ def add_exercise(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    exercise = WorkoutService.add_exercise(workout_id, data.model_dump(), db)
+    exercise = WorkoutService.add_exercise(workout_id, current_user.id, data.model_dump(), db)
     if not exercise:
         raise HTTPException(status_code=404, detail="Workout not found")
     return exercise
@@ -95,7 +95,7 @@ def add_set(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    set_ = WorkoutService.add_set(exercise_id, data.model_dump(), db)
+    set_ = WorkoutService.add_set(exercise_id, current_user.id, data.model_dump(), db)
     if not set_:
         raise HTTPException(status_code=404, detail="Exercise not found")
     return set_
@@ -111,7 +111,7 @@ def update_set(
     filtered = {k: v for k, v in data.model_dump().items() if v is not None}
     if not filtered:
         raise HTTPException(status_code=400, detail="No fields to update")
-    updated = WorkoutService.update_set(set_id, filtered, db)
+    updated = WorkoutService.update_set(set_id, current_user.id, filtered, db)
     if not updated:
         raise HTTPException(status_code=404, detail="Set not found")
     return updated
@@ -123,6 +123,6 @@ def delete_set(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    deleted = WorkoutService.delete_set(set_id, db)
+    deleted = WorkoutService.delete_set(set_id, current_user.id, db)
     if not deleted:
         raise HTTPException(status_code=404, detail="Set not found")
