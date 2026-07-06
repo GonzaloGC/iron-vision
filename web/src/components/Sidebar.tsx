@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const SECTIONS = [
-  { href: "/dashboard", label: "Dashboard", icon: "📊" },
-  { href: "/dashboard/capture", label: "Capture", icon: "📸" },
-  { href: "/dashboard/inventory", label: "Inventory", icon: "🏗" },
+  { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
+  { href: "/dashboard/capture", label: "Capture", icon: "photo_camera" },
+  { href: "/dashboard/inventory", label: "Inventory", icon: "inventory_2" },
 ];
 
 export default function Sidebar() {
@@ -27,7 +27,7 @@ export default function Sidebar() {
               className={isActive ? "active" : ""}
               aria-current={isActive ? "page" : undefined}
             >
-              <span aria-hidden="true">{s.icon}</span>
+              <span className="material-symbols-outlined" aria-hidden="true">{s.icon}</span>
               {s.label}
             </Link>
           );

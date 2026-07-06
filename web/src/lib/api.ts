@@ -20,7 +20,7 @@ export interface EquipmentItem {
 
 export function getEquipment() { return request<EquipmentItem[]>("/inventory"); }
 export function createEquipment(data: Partial<EquipmentItem>) { return request<EquipmentItem>("/inventory", { method: "POST", body: JSON.stringify(data) }); }
-export function updateEquipment(id: number, data: Partial<EquipmentItem>) { return request<EquipmentItem>(`/inventory/${id}`, { method: "PUT", body: JSON.stringify(data) }); }
+export function updateEquipment(id: number, data: Partial<EquipmentItem>) { return request<EquipmentItem>(`/inventory/${id}`, { method: "PATCH", body: JSON.stringify(data) }); }
 export function deleteEquipment(id: number) { return request<void>(`/inventory/${id}`, { method: "DELETE" }); }
 
 export interface WorkoutResponse {

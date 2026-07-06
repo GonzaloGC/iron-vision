@@ -9,14 +9,9 @@ from app.core.dependencies import get_current_user
 from app.models.database import get_db
 from app.models.orm_models import Exercise, Set, User, Workout
 from app.schemas.dashboard import ProgressPoint, RecentWorkout, VolumePoint
+from app.utils.calculations import estimate_one_rm
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
-
-
-def _estimate_one_rm(weight: float, reps: int) -> float:
-    if reps == 1:
-        return weight
-    return round(weight * (1 + reps / 30.0), 1)
 
 
 @router.get("/volume", response_model=list[VolumePoint])
@@ -97,7 +92,7 @@ def get_progress(
     for set_, started_at in reversed(rows):
         one_rm = None
         if set_.reps and set_.weight_kg:
-            one_rm = _estimate_one_rm(set_.weight_kg, set_.reps)
+            one_rm = estimate_one_rm(set_.weight_kg, set_.reps)
         result.append(
             ProgressPoint(
                 date=started_at,

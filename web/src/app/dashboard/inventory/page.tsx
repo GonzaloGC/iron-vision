@@ -9,6 +9,7 @@ type EqForm = { name: string; type: string; weight_kg: number; quantity: number 
 const defaultForm = (): EqForm => ({ name: "", type: "plate", weight_kg: 0, quantity: 1 });
 
 export default function InventoryPage() {
+  useEffect(() => { document.title = "Inventario | IronVision"; }, []);
   const [equipment, setEquipment] = useState<api.EquipmentItem[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<EqForm>(defaultForm());

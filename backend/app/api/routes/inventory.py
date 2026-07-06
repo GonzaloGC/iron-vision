@@ -27,7 +27,7 @@ def create_equipment(
     return EquipmentService.create(current_user.id, data.model_dump(), db)
 
 
-@router.put("/{equipment_id}", response_model=EquipmentResponse)
+@router.patch("/{equipment_id}", response_model=EquipmentResponse)
 def update_equipment(
     equipment_id: int,
     data: EquipmentUpdate,

@@ -5,6 +5,7 @@ import * as api from "@/lib/api";
 import { useToast } from "@/components/Toast";
 
 export default function CapturePage() {
+  useEffect(() => { document.title = "Capturar | IronVision"; }, []);
   const [workouts, setWorkouts] = useState<api.WorkoutResponse[]>([]);
   const [visionResult, setVisionResult] = useState<api.AnalyzeResponse | null>(null);
   const [visionLoading, setVisionLoading] = useState(false);
