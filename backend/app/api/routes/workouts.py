@@ -41,7 +41,7 @@ def get_workout(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    workout = WorkoutService.get_workout_detail(workout_id, db)
+    workout = WorkoutService.get_workout_detail(workout_id, current_user.id, db)
     if not workout:
         raise HTTPException(status_code=404, detail="Workout not found")
     return workout
@@ -53,7 +53,7 @@ def finish_workout(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    workout = WorkoutService.finish_workout(workout_id, db)
+    workout = WorkoutService.finish_workout(workout_id, current_user.id, db)
     if not workout:
         raise HTTPException(status_code=404, detail="Workout not found")
     return workout
@@ -65,7 +65,7 @@ def delete_workout(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    deleted = WorkoutService.delete_workout(workout_id, db)
+    deleted = WorkoutService.delete_workout(workout_id, current_user.id, db)
     if not deleted:
         raise HTTPException(status_code=404, detail="Workout not found")
 

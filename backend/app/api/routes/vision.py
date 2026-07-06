@@ -1,9 +1,10 @@
 import logging
 import os
+import re
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -19,13 +20,20 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/vision", tags=["Vision"])
 
+ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic"}
+MAX_UPLOAD_SIZE_BYTES = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
-def _save_upload(file: UploadFile, upload_dir: str) -> str:
+
+def _sanitize_filename(filename: str) -> str:
+    return re.sub(r"[^\w\\.\\-]", "_", filename)
+
+
+def _save_upload(content: bytes, upload_dir: str, original_filename: str = "photo.jpg") -> str:
     os.makedirs(upload_dir, exist_ok=True)
-    ext = os.path.splitext(file.filename or "photo.jpg")[1]
+    safe_filename = _sanitize_filename(original_filename)
+    ext = os.path.splitext(safe_filename)[1]
     filename = f"photo_{os.urandom(4).hex()}{ext}"
     filepath = os.path.join(upload_dir, filename)
-    content = file.file.read()
     with open(filepath, "wb") as f:
         f.write(content)
     return filepath
@@ -40,7 +48,20 @@ def analyze_photo(
 ):
     logger.info("Analyzing photo for user %d: %s", current_user.id, file.filename)
 
-    photo_path = _save_upload(file, settings.UPLOAD_DIR)
+    if file.content_type not in ALLOWED_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File type {file.content_type} not allowed. Allowed: {', '.join(ALLOWED_TYPES)}",
+        )
+
+    content = file.file.read()
+    if len(content) > MAX_UPLOAD_SIZE_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Max allowed: {settings.MAX_UPLOAD_SIZE_MB}MB",
+        )
+
+    photo_path = _save_upload(content, settings.UPLOAD_DIR, file.filename or "photo.jpg")
     photo_url = f"/{settings.UPLOAD_DIR}/{os.path.basename(photo_path)}"
 
     photo_time = ExifService.extract_datetime(photo_path)
